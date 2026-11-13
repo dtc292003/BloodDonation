@@ -32,10 +32,4 @@ public class UserReviewController {
     public ResponseEntity<List<UserReview>> getByUserId(@PathVariable Integer userId){
         return ResponseEntity.ok(userReviewService.getByUserId(userId));
     }
-
-    // Create UserReview
-    @PostMapping
-    public ResponseEntity<UserReview> create(@RequestBody UserReview review){
-        return ResponseEntity.ok(userReviewService.createReview(review));
-    }
 }

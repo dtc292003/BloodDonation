@@ -1,11 +1,12 @@
 package com.example.blooddonation.controller;
 
+import com.example.blooddonation.dto.UserUpdateRequest;
 import com.example.blooddonation.entity.User;
-import com.example.blooddonation.enums.UserStatus;
 import com.example.blooddonation.service.UserService;
+import com.example.blooddonation.dto.UserResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,14 +19,14 @@ public class UserController {
 
     //Get All User
     @GetMapping
-    public ResponseEntity<List<User>> getAll(){
+    public ResponseEntity<List<UserResponse>> getAll(){
         return ResponseEntity.ok(userService.getAllUser());
     }
 
     //Get By Id User
     @GetMapping("/{id}")
-    public ResponseEntity<User> getById(@PathVariable Integer id){
-        return ResponseEntity.ok(userService.getById(id));
+    public ResponseEntity<UserResponse> getById(@PathVariable Integer id){
+        return ResponseEntity.ok(userService.getUserResponse(id));
     }
 
     //Create User
@@ -36,8 +37,8 @@ public class UserController {
 
     //Update User
     @PutMapping("/{id}")
-    public ResponseEntity<User> update(@PathVariable Integer id, @RequestBody User user){
-        return ResponseEntity.ok(userService.updateUser(id,user));
+    public ResponseEntity<UserResponse> update(@PathVariable Integer id, @Valid @RequestBody UserUpdateRequest request){
+        return ResponseEntity.ok(userService.updateUser(id,request));
     }
 
     //Delete User
@@ -46,16 +47,9 @@ public class UserController {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
     }
-
-    //Update UserStatus
-    @PutMapping("/{id}/status")
-    public ResponseEntity<User> updateStatus(@PathVariable Integer id, @RequestParam UserStatus status){
-        return ResponseEntity.ok(userService.updateUserStatus(id,status));
-    }
-
     //Find By Email
     @GetMapping("/search")
-    public ResponseEntity<User> getByEmail(@RequestParam String email){
-        return ResponseEntity.ok(userService.getByEmail(email));
+    public ResponseEntity<UserResponse> SearchByEmail(@RequestParam String email){
+        return ResponseEntity.ok(userService.getUserResponseByEmail(email));
     }
 }

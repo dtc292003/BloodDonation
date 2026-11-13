@@ -1,5 +1,6 @@
 package com.example.blooddonation.entity;
 
+import com.example.blooddonation.enums.Gender;
 import com.example.blooddonation.enums.UserStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -38,8 +39,9 @@ public class User {
     @Column(name = "date_of_birth")
     private LocalDate dateOfBirth;
 
-    @Column(name = "gender", length = 20)
-    private String gender;
+   @Enumerated(EnumType.STRING)
+   @Column(name = "gender", length = 20)
+   private Gender gender;
 
     @Column(name = "avatar_url")
     private String avatarUrl;
