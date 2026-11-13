@@ -506,4 +506,116 @@ class UserServiceTest {
         verifyNoInteractions(userRepo, userReviewRepo);
     }
 
+    @Test
+    void shouldRejectActionWhenAdminIsNotActive() {
+
+        // 1. Tạo ADMIN đang bị khóa
+        Role adminRole = new Role();
+        adminRole.setRoleName(RoleName.ADMIN);
+
+        User admin = new User();
+        admin.setUserId(1);
+        admin.setRole(adminRole);
+        admin.setUserStatus(UserStatus.LOCKED);
+
+        // 2. Tạo USER đang hoạt động
+        Role userRole = new Role();
+        userRole.setRoleName(RoleName.USER);
+
+        User targetUser = new User();
+        targetUser.setUserId(2);
+        targetUser.setRole(userRole);
+        targetUser.setUserStatus(UserStatus.ACTIVE);
+
+        // 3. Giả lập Repository
+        when(userRepo.findById(1))
+                .thenReturn(Optional.of(admin));
+
+        when(userRepo.findById(2))
+                .thenReturn(Optional.of(targetUser));
+
+        // 4. Kiểm tra Service từ chối thao tác
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> userService.changeStatusByAdmin(
+                        2,
+                        1,
+                        ActionType.LOCK,
+                        "Vi phạm quy định"
+                )
+        );
+
+        // 5. Kiểm tra thông báo lỗi
+        assertEquals(
+                "Tài khoản ADMIN không hoạt động",
+                exception.getMessage()
+        );
+
+        // 6. USER không được thay đổi trạng thái
+        assertEquals(
+                UserStatus.ACTIVE,
+                targetUser.getUserStatus()
+        );
+
+        // 7. Không được lưu thay đổi
+        verify(userRepo, never()).save(any(User.class));
+        verify(userReviewRepo, never()).save(any(UserReview.class));
+    }
+
+    @Test
+    void shouldRejectActionWhenTargetIsAdmin() {
+
+        // 1. Tạo Role ADMIN
+        Role adminRole = new Role();
+        adminRole.setRoleName(RoleName.ADMIN);
+
+        // 2. Tạo ADMIN thực hiện thao tác
+        User admin = new User();
+        admin.setUserId(1);
+        admin.setRole(adminRole);
+        admin.setUserStatus(UserStatus.ACTIVE);
+
+        // 3. Tạo ADMIN bị tác động
+        User targetAdmin = new User();
+        targetAdmin.setUserId(4);
+        targetAdmin.setRole(adminRole);
+        targetAdmin.setUserStatus(UserStatus.ACTIVE);
+
+        // 4. Giả lập Repository
+        when(userRepo.findById(1))
+                .thenReturn(Optional.of(admin));
+
+        when(userRepo.findById(4))
+                .thenReturn(Optional.of(targetAdmin));
+
+        // 5. Thực hiện LOCK và kiểm tra lỗi
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> userService.changeStatusByAdmin(
+                        4,
+                        1,
+                        ActionType.LOCK,
+                        "Khóa tài khoản ADMIN"
+                )
+        );
+
+        // 6. Kiểm tra thông báo lỗi
+        assertEquals(
+                "Không thể thay đổi trạng thái tài khoản ADMIN",
+                exception.getMessage()
+        );
+
+        // 7. Trạng thái ADMIN mục tiêu không thay đổi
+        assertEquals(
+                UserStatus.ACTIVE,
+                targetAdmin.getUserStatus()
+        );
+
+        // 8. Không được lưu USER và USER_REVIEW
+        verify(userRepo, never()).save(any(User.class));
+
+        verify(userReviewRepo, never())
+                .save(any(UserReview.class));
+    }
+
 }
