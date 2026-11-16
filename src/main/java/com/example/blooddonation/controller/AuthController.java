@@ -40,6 +40,7 @@ public class AuthController {
 
     @PostMapping("/resend-otp")
     public ResponseEntity<Map<String, String>> resendOtp(
+            @Valid @RequestBody ResendOtpRequest request
     ) {
 
         emailOtpService.resendOtp(request);
