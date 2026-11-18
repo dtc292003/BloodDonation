@@ -1,5 +1,6 @@
 package com.example.blooddonation.controller;
 
+import com.example.blooddonation.dto.AdminActionRequest;
 import com.example.blooddonation.dto.UserUpdateRequest;
 import com.example.blooddonation.entity.User;
 import com.example.blooddonation.service.UserService;
@@ -7,6 +8,8 @@ import com.example.blooddonation.dto.UserResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -52,4 +55,26 @@ public class UserController {
     public ResponseEntity<UserResponse> SearchByEmail(@RequestParam String email){
         return ResponseEntity.ok(userService.getUserResponseByEmail(email));
     }
+
+    //Chang Status
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<UserResponse> changeStatus(
+            @PathVariable Integer id,
+            @Valid @RequestBody AdminActionRequest request,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        Integer adminId = Integer.valueOf(jwt.getSubject());
+
+        userService.changeStatusByAdmin(
+                id,
+                adminId,
+                request.action(),
+                request.reason()
+        );
+
+        return ResponseEntity.ok(
+                userService.getUserResponse(id)
+        );
+    }
+
 }

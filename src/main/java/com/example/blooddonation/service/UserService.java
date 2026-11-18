@@ -10,6 +10,7 @@ import com.example.blooddonation.enums.RoleName;
 import com.example.blooddonation.enums.UserStatus;
 import com.example.blooddonation.exception.DuplicateResourceException;
 import com.example.blooddonation.exception.ResourceNotFoundException;
+import com.example.blooddonation.repository.RefreshTokenRepository;
 import com.example.blooddonation.repository.RoleRepository;
 import com.example.blooddonation.repository.UserRepository;
 import com.example.blooddonation.dto.UserResponse;
@@ -20,6 +21,7 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -31,6 +33,7 @@ public class  UserService {
     private final UserRepository userRepo;
     private final RoleRepository roleRepo;
     private final UserReviewRepository userReviewRepo;
+    private final RefreshTokenRepository refreshTokenRepo;
 
     // Fill All
     public List<UserResponse> getAllUser() {
@@ -243,8 +246,14 @@ public class  UserService {
 
         targetUser.setUserStatus(newStatus);
         targetUser.setUpdatedAt(now);
+        targetUser.setTokenVersion(targetUser.getTokenVersion() + 1);
 
         User updatedUser = userRepo.save(targetUser);
+
+        refreshTokenRepo.revokeAllByUserId(
+                targetUser.getUserId(),
+                Instant.now()
+        );
 
         UserReview review = new UserReview();
 

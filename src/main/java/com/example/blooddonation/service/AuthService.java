@@ -1,8 +1,7 @@
 
 package com.example.blooddonation.service;
 
-import com.example.blooddonation.dto.RegisterRequest;
-import com.example.blooddonation.dto.RegisterResponse;
+import com.example.blooddonation.dto.*;
 import com.example.blooddonation.entity.Role;
 import com.example.blooddonation.entity.User;
 import com.example.blooddonation.enums.RoleName;
@@ -12,6 +11,9 @@ import com.example.blooddonation.repository.RoleRepository;
 import com.example.blooddonation.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,7 +30,8 @@ public class AuthService {
     private final RoleRepository roleRepo;
     private final PasswordEncoder passwordEncoder;
     private final EmailOtpService emailOtpService;
-
+    private final JwtService jwtService;
+    private final RefreshTokenService refreshTokenService;
     @Transactional
     public RegisterResponse register(RegisterRequest request) {
 
@@ -99,4 +102,88 @@ public class AuthService {
                 "Đăng ký thành công, cần xác minh email"
         );
     }
+
+    @Transactional(readOnly = true)
+    public User authenticateUser(LoginRequest request) {
+        String email = request.email()
+                .trim()
+                .toLowerCase(Locale.ROOT);
+
+        User user = userRepo.findByEmail(email)
+                .orElseThrow(() -> new BadCredentialsException("Email hoặc mật khẩu không đúng"));
+
+        if (!passwordEncoder.matches(
+                request.password(),
+                user.getPasswordHash()
+        )) {
+            throw new BadCredentialsException(
+                    "Email hoặc mật khẩu không đúng"
+            );
+        }
+        if(!Boolean.TRUE.equals(user.getEmailVerified())){
+            throw new DisabledException("Tài khoản chưa xác minh email");
+        }
+        if(user.getUserStatus() == UserStatus.LOCKED){
+            throw new LockedException("Tài khoản đã bị khóa");
+        }
+        if(user.getUserStatus() !=UserStatus.ACTIVE){
+            throw new DisabledException("Tài khoản chưa đươc phép đăng nhập");
+        }
+        return user;
+
+    }
+
+    //Login
+
+    @Transactional
+    public LoginResponse login(LoginRequest request){
+        User user = authenticateUser(request);
+        String accessToken = jwtService.generateAccessToken(user);
+        String refreshToken = refreshTokenService.issue(user);
+        return new LoginResponse(
+                accessToken,
+                refreshToken,
+                "Bearer",
+                jwtService.getAccessTokenLifetimeSeconds(),
+                user.getUserId(),
+                user.getFullName(),
+                user.getEmail(),
+                user.getRole().getRoleName().name()
+        );
+    }
+
+
+    @Transactional
+    public LoginResponse refresh(RefreshTokenRequest request) {
+
+        // 1. Kiểm tra và xoay vòng Refresh Token
+        RefreshTokenService.RotationResult result =
+                refreshTokenService.rotate(request.refreshToken());
+
+        User user = result.user();
+
+        // 2. Tạo JWT Access Token mới
+        String accessToken =
+                jwtService.generateAccessToken(user);
+
+        // 3. Trả về cặp Token mới
+        return new LoginResponse(
+                accessToken,
+                result.refreshToken(),
+                "Bearer",
+                jwtService.getAccessTokenLifetimeSeconds(),
+                user.getUserId(),
+                user.getFullName(),
+                user.getEmail(),
+                user.getRole().getRoleName().name()
+        );
+    }
+
+    @Transactional
+    public void logout(RefreshTokenRequest request) {
+
+        // Thu hồi Refresh Token hiện tại
+        refreshTokenService.revoke(request.refreshToken());
+    }
+
 }

@@ -7,6 +7,7 @@ import com.example.blooddonation.entity.UserReview;
 import com.example.blooddonation.enums.ActionType;
 import com.example.blooddonation.enums.RoleName;
 import com.example.blooddonation.enums.UserStatus;
+import com.example.blooddonation.repository.RefreshTokenRepository;
 import com.example.blooddonation.repository.RoleRepository;
 import com.example.blooddonation.repository.UserRepository;
 import com.example.blooddonation.repository.UserReviewRepository;
@@ -36,6 +37,8 @@ class UserServiceTest {
 
     @Mock
     private UserReviewRepository userReviewRepo;
+    @Mock
+    private RefreshTokenRepository refreshTokenRepo;
 
     @InjectMocks
     private UserService userService;

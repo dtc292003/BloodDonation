@@ -1,9 +1,7 @@
 package com.example.blooddonation.controller;
 
-import com.example.blooddonation.dto.RegisterRequest;
-import com.example.blooddonation.dto.RegisterResponse;
-import com.example.blooddonation.dto.ResendOtpRequest;
-import com.example.blooddonation.dto.VerifyEmailRequest;
+import com.example.blooddonation.dto.*;
+import com.example.blooddonation.repository.RefreshTokenRepository;
 import com.example.blooddonation.service.AuthService;
 
 import com.example.blooddonation.service.EmailOtpService;
@@ -52,6 +50,28 @@ public class AuthController {
                                 "hệ thống sẽ gửi mã OTP mới."
                 )
         );
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> login(
+            @Valid @RequestBody LoginRequest request
+    ) {
+        LoginResponse response =    authService.login(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<LoginResponse> refresh(
+            @Valid @RequestBody RefreshTokenRequest request
+    ){
+        return ResponseEntity.ok(authService.refresh(request));
+    }
+    @PostMapping("/logout")
+    public  ResponseEntity<Map<String,String>> logout(
+            @Valid @RequestBody RefreshTokenRequest request
+    ){
+        authService.logout(request);
+        return ResponseEntity.ok(Map.of("message", "Đăng xuất thành công"));
     }
 
 }
