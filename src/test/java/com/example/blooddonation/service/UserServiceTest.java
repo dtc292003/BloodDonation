@@ -11,6 +11,8 @@ import com.example.blooddonation.repository.RefreshTokenRepository;
 import com.example.blooddonation.repository.RoleRepository;
 import com.example.blooddonation.repository.UserRepository;
 import com.example.blooddonation.repository.UserReviewRepository;
+import com.example.blooddonation.entity.MedicalUnit;
+import com.example.blooddonation.enums.ApprovalStatus;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -185,11 +187,23 @@ class UserServiceTest {
         medicalRole.setRoleName(RoleName.MEDICAL);
 
         // 4. Tạo tài khoản MEDICAL đang chờ duyệt
+
+// 4. Tạo tài khoản MEDICAL đang chờ duyệt
         User targetUser = new User();
         targetUser.setUserId(3);
         targetUser.setRole(medicalRole);
         targetUser.setUserStatus(UserStatus.PENDING_APPROVAL);
         targetUser.setEmailVerified(true);
+
+// 5. Giả lập đơn vị y tế đã được ADMIN phê duyệt
+        MedicalUnit medicalUnit = new MedicalUnit();
+        medicalUnit.setMedicalUnitId(1);
+        medicalUnit.setUnitName("Benh vien ABC");
+        medicalUnit.setApprovalStatus(ApprovalStatus.APPROVED);
+
+// 6. Liên kết MEDICAL với đơn vị y tế
+        targetUser.setMedicalUnit(medicalUnit);
+
 
         // 5. Giả lập Repository tìm tài khoản
         when(userRepo.findById(1))
@@ -620,5 +634,76 @@ class UserServiceTest {
         verify(userReviewRepo, never())
                 .save(any(UserReview.class));
     }
+
+    @Test
+    void shouldRejectApprovalWhenMedicalUnitPending() {
+
+        // 1. Tạo ADMIN
+        Role adminRole = new Role();
+        adminRole.setRoleName(RoleName.ADMIN);
+
+        User admin = new User();
+        admin.setUserId(1);
+        admin.setRole(adminRole);
+        admin.setUserStatus(UserStatus.ACTIVE);
+
+        // 2. Tạo MEDICAL đang chờ duyệt
+        Role medicalRole = new Role();
+        medicalRole.setRoleName(RoleName.MEDICAL);
+
+        User targetUser = new User();
+        targetUser.setUserId(3);
+        targetUser.setRole(medicalRole);
+        targetUser.setUserStatus(UserStatus.PENDING_APPROVAL);
+        targetUser.setEmailVerified(true);
+
+        // 3. Đơn vị y tế chưa được duyệt
+        MedicalUnit medicalUnit = new MedicalUnit();
+        medicalUnit.setMedicalUnitId(1);
+        medicalUnit.setUnitName("Benh vien ABC");
+        medicalUnit.setApprovalStatus(ApprovalStatus.PENDING);
+
+        targetUser.setMedicalUnit(medicalUnit);
+
+        // 4. Mock Repository
+        when(userRepo.findById(1))
+                .thenReturn(Optional.of(admin));
+
+        when(userRepo.findById(3))
+                .thenReturn(Optional.of(targetUser));
+
+        // 5. ADMIN cố gắng duyệt MEDICAL
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> userService.changeStatusByAdmin(
+                        3,
+                        1,
+                        ActionType.APPROVE,
+                        "Duyệt tài khoản MEDICAL"
+                )
+        );
+
+        // 6. Kiểm tra thông báo lỗi
+        assertEquals(
+                "Đơn vị y tế chưa được phê duyệt",
+                exception.getMessage()
+        );
+
+        // 7. MEDICAL vẫn phải chờ duyệt
+        assertEquals(
+                UserStatus.PENDING_APPROVAL,
+                targetUser.getUserStatus()
+        );
+
+        // 8. Không được lưu thay đổi
+        verify(userRepo, never())
+                .save(any(User.class));
+
+        verify(userReviewRepo, never())
+                .save(any(UserReview.class));
+
+        verifyNoInteractions(refreshTokenRepo);
+    }
+
 
 }

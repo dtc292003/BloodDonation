@@ -6,6 +6,7 @@ import com.example.blooddonation.entity.Role;
 import com.example.blooddonation.entity.User;
 import com.example.blooddonation.entity.UserReview;
 import com.example.blooddonation.enums.ActionType;
+import com.example.blooddonation.enums.ApprovalStatus;
 import com.example.blooddonation.enums.RoleName;
 import com.example.blooddonation.enums.UserStatus;
 import com.example.blooddonation.exception.DuplicateResourceException;
@@ -209,6 +210,11 @@ public class  UserService {
                 if (oldStatus != UserStatus.PENDING_APPROVAL) {
                     throw new IllegalArgumentException(
                             "Tài khoản không ở trạng thái chờ duyệt"
+                    );
+                }
+                if(targetUser.getMedicalUnit() == null || targetUser.getMedicalUnit().getApprovalStatus() != ApprovalStatus.APPROVED){
+                    throw new IllegalArgumentException(
+                            "Đơn vị y tế chưa được phê duyệt"
                     );
                 }
                 newStatus = UserStatus.ACTIVE;

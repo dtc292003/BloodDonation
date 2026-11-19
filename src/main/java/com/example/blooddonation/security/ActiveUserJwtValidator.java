@@ -2,6 +2,8 @@
 package com.example.blooddonation.security;
 
 import com.example.blooddonation.entity.User;
+import com.example.blooddonation.enums.ApprovalStatus;
+import com.example.blooddonation.enums.RoleName;
 import com.example.blooddonation.enums.UserStatus;
 import com.example.blooddonation.repository.UserRepository;
 
@@ -23,14 +25,14 @@ public class ActiveUserJwtValidator
     @Override
     public OAuth2TokenValidatorResult validate(Jwt jwt) {
 
-        // 1. Chỉ chấp nhận Access Token
+        // Chỉ chấp nhận Access Token
         if (!"access".equals(
                 jwt.getClaimAsString("token_type")
         )) {
             return invalid();
         }
 
-        // 2. Lấy User ID từ JWT subject
+        // Lấy User ID từ JWT subject
         Integer userId;
 
         try {
@@ -39,7 +41,7 @@ public class ActiveUserJwtValidator
             return invalid();
         }
 
-        // 3. Kiểm tra người dùng có tồn tại
+        // Kiểm tra người dùng có tồn tại
         Optional<User> optionalUser =
                 userRepo.findByIdWithRole(userId);
 
@@ -49,19 +51,19 @@ public class ActiveUserJwtValidator
 
         User user = optionalUser.get();
 
-        // 4. Email phải được xác minh
+        // Email phải được xác minh
         if (!Boolean.TRUE.equals(
                 user.getEmailVerified()
         )) {
             return invalid();
         }
 
-        // 5. Tài khoản phải ACTIVE
+        // Tài khoản phải ACTIVE
         if (user.getUserStatus() != UserStatus.ACTIVE) {
             return invalid();
         }
 
-        // 6. Kiểm tra Role hiện tại trong MySQL
+        // Kiểm tra Role hiện tại trong MySQL
         if (user.getRole() == null ||
                 user.getRole().getRoleName() == null) {
             return invalid();
@@ -87,7 +89,13 @@ public class ActiveUserJwtValidator
             return invalid();
         }
 
-        // 7. JWT hợp lệ
+        if(user.getRole().getRoleName() == RoleName.MEDICAL) {
+            if(user.getMedicalUnit() == null || user.getMedicalUnit().getApprovalStatus() != ApprovalStatus.APPROVED){
+                return invalid();
+            }
+        }
+
+        // JWT hợp lệ
         return OAuth2TokenValidatorResult.success();
     }
 

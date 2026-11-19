@@ -72,4 +72,13 @@ public class User {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "role_id", nullable = false)
     private Role role;
+
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "medical_unit_id",
+            referencedColumnName = "medical_unit_id"
+    )
+    private MedicalUnit medicalUnit;
+
 }

@@ -3,6 +3,8 @@ package com.example.blooddonation.service;
 
 import com.example.blooddonation.entity.RefreshToken;
 import com.example.blooddonation.entity.User;
+import com.example.blooddonation.enums.ApprovalStatus;
+import com.example.blooddonation.enums.RoleName;
 import com.example.blooddonation.enums.UserStatus;
 import com.example.blooddonation.repository.RefreshTokenRepository;
 
@@ -93,7 +95,7 @@ public class RefreshTokenService {
         }
     }
 
-    // 4. Kiểm tra trạng thái tài khoản
+    // Kiểm tra trạng thái tài khoản
     private void validateUser(User user) {
 
         if (user == null ||
@@ -104,9 +106,16 @@ public class RefreshTokenService {
                     "Tài khoản không được phép sử dụng Refresh Token"
             );
         }
+        if(user.getRole() != null && user.getRole().getRoleName() == RoleName.MEDICAL){
+            if(user.getMedicalUnit() == null || user.getMedicalUnit().getApprovalStatus() != ApprovalStatus.APPROVED){
+                throw new DisabledException(
+                        "Đơn vị y tế chưa được cấp phép hoạt động"
+                );
+            }
+        }
     }
 
-    // 5. Xoay vòng Refresh Token
+    // Xoay vòng Refresh Token
     @Transactional
     public RotationResult rotate(String rawToken) {
 
