@@ -1,10 +1,10 @@
 package com.example.blooddonation.dto;
 
 import jakarta.validation.constraints.*;
-
 import java.math.BigDecimal;
 
 public record NewMedicalUnitRequest(
+
         @NotBlank
         @Size(max = 150)
         String unitName,
@@ -32,11 +32,7 @@ public record NewMedicalUnitRequest(
         @Size(max = 20)
         String phoneNumber,
 
-        @Email
-        @Size(max = 254)
-        String email,
-
-        @NotBlank(message = "Cần cung cấp thông tin xác minh")
+        @NotBlank
         String verificationInfo
-) {
-}
+
+) {}

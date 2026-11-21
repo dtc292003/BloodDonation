@@ -1,4 +1,3 @@
-
 package com.example.blooddonation.controller;
 
 import com.example.blooddonation.dto.MedicalRegisterRequest;
@@ -21,31 +20,20 @@ public class MedicalRegistrationController {
 
     private final MedicalRegistrationService medicalRegistrationService;
 
-    // Đăng ký MEDICAL bằng JSON - giữ nguyên API cũ
-    @PostMapping("/register-medical")
-    public ResponseEntity<MedicalRegisterResponse> registerMedical(
-            @Valid @RequestBody MedicalRegisterRequest request
-    ) {
-        MedicalRegisterResponse response =
-                medicalRegistrationService.register(request);
-
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(response);
-    }
-
-    // Đăng ký MEDICAL kèm giấy tờ xác minh
     @PostMapping(
             value = "/register-medical-with-document",
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE
     )
     public ResponseEntity<MedicalRegisterResponse> registerMedicalWithDocument(
-            @Valid @RequestPart("request")
+
+            @Valid
+            @RequestPart("request")
             MedicalRegisterRequest request,
 
             @RequestPart("document")
             MultipartFile document
     ) {
+
         MedicalRegisterResponse response =
                 medicalRegistrationService.registerWithDocument(
                         request,

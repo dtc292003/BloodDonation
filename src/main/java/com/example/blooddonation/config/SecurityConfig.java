@@ -57,7 +57,6 @@ public class SecurityConfig {
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/api/auth/register",
-                                "/api/auth/register-medical",
                                 "/api/auth/register-medical-with-document",
                                 "/api/auth/verify-email",
                                 "/api/auth/resend-otp",

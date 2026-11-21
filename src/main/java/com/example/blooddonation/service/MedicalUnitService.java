@@ -106,6 +106,63 @@ public class MedicalUnitService {
             }
         };
 
+        // Tài khoản MEDICAL gắn với cơ sở y tế
+        List<User> medicalAccounts =
+                userRepo.findByMedicalUnit_MedicalUnitId(medicalUnitId);
+
+// Khi ADMIN duyệt hoặc từ chối cơ sở,
+// đồng thời cập nhật tài khoản MEDICAL
+        if (request.decision() == MedicalUnitReviewDecision.APPROVE
+                || request.decision() == MedicalUnitReviewDecision.REJECT) {
+
+            // Mỗi cơ sở chỉ được có một tài khoản MEDICAL
+            if (medicalAccounts.size() != 1) {
+                throw new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "Cơ sở phải có đúng một tài khoản MEDICAL"
+                );
+            }
+
+            User medicalUser = medicalAccounts.get(0);
+
+            if (medicalUser.getRole() == null
+                    || medicalUser.getRole().getRoleName() != RoleName.MEDICAL) {
+                throw new ResponseStatusException(
+                        HttpStatus.CONFLICT,
+                        "Tài khoản liên kết không có quyền MEDICAL"
+                );
+            }
+
+            if (request.decision() == MedicalUnitReviewDecision.APPROVE) {
+
+                // Chỉ duyệt tài khoản đã xác minh email
+                if (!Boolean.TRUE.equals(medicalUser.getEmailVerified())
+                        || medicalUser.getUserStatus() != UserStatus.PENDING_APPROVAL) {
+                    throw new ResponseStatusException(
+                            HttpStatus.CONFLICT,
+                            "Tài khoản MEDICAL chưa hoàn tất xác minh OTP"
+                    );
+                }
+
+                medicalUser.setUserStatus(UserStatus.ACTIVE);
+
+            } else {
+
+                if (medicalUser.getUserStatus() != UserStatus.PENDING_EMAIL
+                        && medicalUser.getUserStatus() != UserStatus.PENDING_APPROVAL) {
+                    throw new ResponseStatusException(
+                            HttpStatus.CONFLICT,
+                            "Tài khoản không ở trạng thái có thể từ chối"
+                    );
+                }
+
+                medicalUser.setUserStatus(UserStatus.REJECTED);
+            }
+
+            medicalUser.setUpdatedAt(LocalDateTime.now());
+
+            userRepo.save(medicalUser);
+        }
         // Update Status
         unit.setApprovalStatus(newStatus);
         medicalUnitRepo.save(unit);
